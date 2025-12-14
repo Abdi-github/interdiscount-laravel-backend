@@ -1,0 +1,198 @@
+services:
+  # ── Laravel API ──
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: interdiscount-api
+    ports:
+      - "4004:8000"
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:4004
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=interdiscount
+      - DB_USERNAME=interdiscount
+      - DB_PASSWORD=interdiscount_secret
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+      - MAIL_FROM_ADDRESS=noreply@interdiscount-clone.ch
+      - MAIL_FROM_NAME=Interdiscount
+      - SCOUT_DRIVER=meilisearch
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── Laravel Horizon (Queue Worker) ──
+  horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: interdiscount-horizon
+    command: php artisan horizon
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=interdiscount
+      - DB_USERNAME=interdiscount
+      - DB_PASSWORD=interdiscount_secret
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+      - SCOUT_DRIVER=meilisearch
+      - MEILISEARCH_HOST=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── Node.js (Vite dev server for admin panel HMR) ──
+  node:
+    image: node:22-alpine
+    container_name: interdiscount-node
+    working_dir: /var/www/html
+    ports:
+      - "5174:5173"
+    volumes:
+      - .:/var/www/html
+      - node_modules:/var/www/html/node_modules
+    command: sh -c "if [ -f package.json ]; then npm install && npm run dev -- --host 0.0.0.0; else echo 'No package.json yet, sleeping...' && tail -f /dev/null; fi"
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── MySQL 8.4 ──
+  mysql:
+    image: mysql:8.4
+    container_name: interdiscount-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: interdiscount
+      MYSQL_USER: interdiscount
+      MYSQL_PASSWORD: interdiscount_secret
+      MYSQL_ROOT_PASSWORD: root_secret
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── Redis 7 ──
+  redis:
+    image: redis:7-alpine
+    container_name: interdiscount-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── Meilisearch ──
+  meilisearch:
+    image: getmeili/meilisearch:v1.6
+    container_name: interdiscount-meilisearch
+    ports:
+      - "7702:7700"
+    environment:
+      MEILI_MASTER_KEY: masterKey
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── Mailpit (Email Testing) ──
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: interdiscount-mailpit
+    ports:
+      - "1026:1025"
+      - "8026:8025"
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+  # ── phpMyAdmin ──
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: interdiscount-phpmyadmin
+    ports:
+      - "8085:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root_secret
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - interdiscount
+    restart: unless-stopped
+
+volumes:
+  vendor:
+  node_modules:
+  mysql_data:
+  redis_data:
+  meilisearch_data:
+
+networks:
+  interdiscount:
+    driver: bridge
