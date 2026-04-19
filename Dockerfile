@@ -112,11 +112,6 @@ RUN composer install \
     --prefer-dist \
     --optimize-autoloader
 
-# Cache config, routes, views
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
-
 # ============================================================
 # Stage 4: PRODUCTION — Non-root PHP-FPM
 # ============================================================
@@ -148,11 +143,16 @@ RUN addgroup -g 1000 -S appuser \
 # Copy built application from builder stage
 COPY --from=builder --chown=appuser:appuser /var/www/html /var/www/html
 
+# Copy and set entrypoint script
+COPY --chown=appuser:appuser docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Switch to non-root user
 USER appuser
 
 # Expose PHP-FPM port
 EXPOSE 9000
 
-# Run PHP-FPM
+# Entrypoint caches config/routes/views at runtime (when env vars are available)
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["php-fpm"]

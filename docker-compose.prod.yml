@@ -28,7 +28,7 @@ services:
       resources:
         limits:
           memory: 64M
-    restart: unless-stopped
+    restart: no
 
   # ── Laravel API (PHP-FPM) ──
   api:
@@ -64,7 +64,7 @@ services:
       resources:
         limits:
           memory: 192M
-    restart: unless-stopped
+    restart: no
 
   # ── Laravel Horizon (Queue Worker) ──
   horizon:
@@ -84,13 +84,15 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - interdiscount
     deploy:
       resources:
         limits:
           memory: 128M
-    restart: unless-stopped
+    restart: no
 
   # ── Scheduler (cron) ──
   scheduler:
@@ -110,13 +112,15 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - interdiscount
     deploy:
       resources:
         limits:
           memory: 128M
-    restart: unless-stopped
+    restart: no
 
   # ── MySQL 8.4 ──
   mysql:
@@ -145,7 +149,7 @@ services:
       resources:
         limits:
           memory: 256M
-    restart: unless-stopped
+    restart: no
 
   # ── Redis 7 ──
   redis:
@@ -170,7 +174,7 @@ services:
       resources:
         limits:
           memory: 128M
-    restart: unless-stopped
+    restart: no
 
   # ── Meilisearch ──
   meilisearch:
@@ -193,7 +197,7 @@ services:
       resources:
         limits:
           memory: 128M
-    restart: unless-stopped
+    restart: no
 
 volumes:
   app_public:
