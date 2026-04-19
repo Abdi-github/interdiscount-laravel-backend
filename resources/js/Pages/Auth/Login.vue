@@ -6,6 +6,7 @@ import Password from 'primevue/password';
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
 import Message from 'primevue/message';
+import Divider from 'primevue/divider';
 
 const { t } = useI18n();
 
@@ -14,11 +15,24 @@ defineProps<{
     status?: string;
 }>();
 
+const demoAccounts = [
+    { role: 'Super Admin', email: 'admin.de@interdiscount-clone.ch', password: 'Password123!', color: '#d32f2f' },
+    { role: 'Platform Admin', email: 'moderator.de@interdiscount-clone.ch', password: 'Password123!', color: '#e65100' },
+    { role: 'Store Manager', email: 'manager.de@interdiscount-clone.ch', password: 'Password123!', color: '#2e7d32' },
+    { role: 'Store Staff', email: 'staff.de@interdiscount-clone.ch', password: 'Password123!', color: '#1565c0' },
+    { role: 'Support Agent', email: 'support.de@interdiscount-clone.ch', password: 'Password123!', color: '#6a1b9a' },
+];
+
 const form = useForm({
     email: '',
     password: '',
     remember: false,
 });
+
+const fillDemoAccount = (account: typeof demoAccounts[number]) => {
+    form.email = account.email;
+    form.password = account.password;
+};
 
 const submit = () => {
     form.transform((data) => ({
@@ -120,6 +134,24 @@ const submit = () => {
                         data-testid="login-button"
                     />
                 </form>
+
+                <!-- Demo Accounts -->
+                <Divider align="center" class="my-4">
+                    <span class="text-xs text-gray-400">Demo Accounts</span>
+                </Divider>
+
+                <div class="flex flex-wrap gap-2 justify-center">
+                    <button
+                        v-for="account in demoAccounts"
+                        :key="account.role"
+                        type="button"
+                        class="px-3 py-1.5 rounded-full text-xs font-semibold text-white cursor-pointer transition-opacity hover:opacity-85"
+                        :style="{ backgroundColor: account.color }"
+                        @click="fillDemoAccount(account)"
+                    >
+                        {{ account.role }}
+                    </button>
+                </div>
             </div>
 
             <!-- Footer -->
