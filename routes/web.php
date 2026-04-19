@@ -20,6 +20,9 @@ use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Redirect root to login
+Route::redirect('/', '/login');
+
 // Admin panel routes (Jetstream handles /login, /logout, etc.)
 Route::middleware([
     'auth',

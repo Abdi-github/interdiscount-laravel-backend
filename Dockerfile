@@ -83,11 +83,27 @@ EXPOSE 8000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
 
 # ============================================================
-# Stage 3: BUILDER — Production dependency install + caching
+# Stage 3a: NODE — Build Vite/Vue frontend assets
+# ============================================================
+FROM node:20-alpine AS node-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ============================================================
+# Stage 3b: BUILDER — Production dependency install + caching
 # ============================================================
 FROM base AS builder
 
 COPY . /var/www/html
+
+# Copy Vite-built frontend assets from node stage
+COPY --from=node-builder /app/public/build /var/www/html/public/build
 
 # Install production-only dependencies
 RUN composer install \
