@@ -47,6 +47,7 @@ use App\Domain\Transfer\Events\TransferShipped;
 use App\Domain\Transfer\Listeners\NotifyTransferStatusChanged;
 use App\Domain\Transfer\Listeners\UpdateInventoryOnTransferReceive;
 use App\Domain\Transfer\Listeners\UpdateInventoryOnTransferShip;
+use Dedoc\Scramble\Scramble;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -60,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Scramble::configure()->expose(
+            ui: '/docs/api/v1',
+            document: '/docs/api/v1/openapi.json',
+        );
+
         $this->configureGate();
         $this->configureEvents();
     }
